@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Saifer EMS - Autorizzazione FusionSolar</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --txt:#1d2733; --muted:#5b6b7c; --ok:#1a7f37; --err:#b42318; --acc:#0b5cad; --bd:#d5dde6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12161c; --card:#1b222b; --txt:#e6edf3; --muted:#9aa7b4; --ok:#3fb950; --err:#f85149; --acc:#58a6ff; --bd:#2d3742; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:640px; margin:40px auto; padding:0 16px; }
+  .card { background:var(--card); border:1px solid var(--bd); border-radius:12px; padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; font-size:14px; }
+  .codice { font:600 18px/1.4 ui-monospace, Consolas, monospace; word-break:break-all; background:var(--bg); border:1px solid var(--bd); border-radius:8px; padding:12px; margin:8px 0 12px; }
+  button { background:var(--acc); color:#fff; border:0; border-radius:8px; padding:10px 18px; font-size:15px; cursor:pointer; }
+  .ok { color:var(--ok); } .err { color:var(--err); }
+  .nota { color:var(--muted); font-size:14px; margin-top:16px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>Saifer EMS &ndash; Autorizzazione FusionSolar</h1>
+    <p class="sub">Pagina di ritorno (callback) dell'autorizzazione OAuth 2.0 / OAuth 2.0 callback page</p>
+
+    <div id="conCodice" class="hidden">
+      <p class="ok"><b>Autorizzazione ricevuta.</b> Copia il codice e incollalo nello script entro 5 minuti.<br>
+      <small>Authorization received. Copy the code into the script within 5 minutes.</small></p>
+      <div class="codice" id="codice"></div>
+      <button id="copia" type="button">Copia codice</button>
+      <span id="copiato" class="ok hidden">&nbsp;Copiato</span>
+      <p class="nota" id="statoRiga"></p>
+      <p class="nota" id="tempo"></p>
+    </div>
+
+    <div id="conErrore" class="hidden">
+      <p class="err"><b>Autorizzazione non concessa o non riuscita.</b></p>
+      <div class="codice" id="errore"></div>
+    </div>
+
+    <div id="senzaCodice" class="hidden">
+      <p>Nessun codice di autorizzazione in questa pagina.<br>
+      <small>No authorization code on this page.</small></p>
+      <p class="nota">Questa pagina viene aperta automaticamente da FusionSolar dopo che il proprietario
+      dell'impianto ha autorizzato l'applicazione Saifer_EMS.</p>
+    </div>
+
+    <p class="nota">Il codice resta solo nel tuo browser: questa pagina non lo invia a nessuno.</p>
+  </div>
+</main>
+<script>
+(function () {
+  var p = new URLSearchParams(window.location.search);
+  var code = p.get("code"), state = p.get("state"), err = p.get("error"), errDesc = p.get("error_description");
+  function mostra(id) { document.getElementById(id).classList.remove("hidden"); }
+  if (code) {
+    mostra("conCodice");
+    document.getElementById("codice").textContent = code;
+    if (state) document.getElementById("statoRiga").textContent = "Controllo (state): " + state;
+    var inizio = Date.now();
+    var t = setInterval(function () {
+      var resto = 300 - Math.floor((Date.now() - inizio) / 1000);
+      document.getElementById("tempo").textContent = resto > 0
+        ? "Tempo indicativo rimasto: " + Math.floor(resto / 60) + ":" + String(resto % 60).padStart(2, "0")
+        : "Probabilmente scaduto (vale 5 minuti): ripeti l'autorizzazione.";
+      if (resto <= 0) clearInterval(t);
+    }, 1000);
+    document.getElementById("copia").addEventListener("click", function () {
+      var fatto = function () { mostra("copiato"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(fatto, function () { seleziona(); });
+      } else { seleziona(); }
+    });
+    function seleziona() {
+      var r = document.createRange(); r.selectNodeContents(document.getElementById("codice"));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      document.getElementById("copiato").textContent = " Selezionato: premi Ctrl+C";
+      mostra("copiato");
+    }
+  } else if (err) {
+    mostra("conErrore");
+    document.getElementById("errore").textContent = err + (errDesc ? " - " + errDesc : "");
+  } else {
+    mostra("senzaCodice");
+  }
+})();
+</script>
+</body>
+</html>
